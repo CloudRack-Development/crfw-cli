@@ -5,7 +5,8 @@ Download the CRFW-CLI script to your server.
 
 Fixing line endings without dos2unix: You can manually convert the line endings using a tool like sed. Try running the following command:
 ```sh
-wget -O block_subnets.sh https://fw.cloudrack.ca/block_subnets.sh && sed -i 's/\r//' block_subnets.sh
+wget -O block_subnets.sh https://fw.cloudrack.ca/block_subnets.sh
+sed -i 's/\r//' block_subnets.sh
 ```
 This command will replace all instances of carriage return (\r) characters, which are typical of Windows line endings, with Unix line endings.
 
