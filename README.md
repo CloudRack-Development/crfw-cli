@@ -1,6 +1,6 @@
 # CloudRackFireWallClient (CRFW-CLI)
 
-![CloudRackFireWallClient](https://yourimageurl.com/logo.png)
+![CloudRackFireWallClient](https://github.com/CloudRack-Development/crfw-cli/assets/170158299/db2e11d0-241a-4494-8457-e1193ad44579)
 
 ## Overview
 
