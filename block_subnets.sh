@@ -16,11 +16,31 @@ initialize_files() {
     fi
 }
 
+# Function to normalize IP addresses/subnets
+normalize_ip() {
+    ip=$1
+    # If it's a CIDR notation, return as is
+    if [[ "$ip" =~ / ]]; then
+        echo "$ip"
+    else
+        # Otherwise, append /32 for single IP addresses
+        echo "$ip/32"
+    fi
+}
+
 # Function to sync existing iptables rules to files
 sync_iptables_to_files() {
     echo "Syncing existing iptables rules to blacklist and whitelist files..."
-    iptables-save | grep -- '-A INPUT -s' | grep -v ' -j ACCEPT' | awk '{print $4}' > $BLACKLIST_FILE
-    iptables-save | grep -- '-A INPUT -s' | grep ' -j ACCEPT' | awk '{print $4}' > $WHITELIST_FILE
+    iptables-save | grep -- '-A INPUT -s' | grep -v ' -j ACCEPT' | awk '{print $4}' | while read -r ip; do
+        normalized_ip=$(normalize_ip "$ip")
+        echo "$normalized_ip" >> $BLACKLIST_FILE
+    done
+    iptables-save | grep -- '-A INPUT -s' | grep ' -j ACCEPT' | awk '{print $4}' | while read -r ip; do
+        normalized_ip=$(normalize_ip "$ip")
+        echo "$normalized_ip" >> $WHITELIST_FILE
+    done
+    sort -u -o $BLACKLIST_FILE $BLACKLIST_FILE
+    sort -u -o $WHITELIST_FILE $WHITELIST_FILE
     echo "Sync completed."
 }
 
@@ -42,62 +62,78 @@ display_menu() {
 # Function to add a new IP/Subnet to the block list
 add_ip_subnet() {
     read -p "Enter the IP/Subnet or Domain to block: " new_entry
-    echo "You entered: $new_entry"
+    normalized_entry=$(normalize_ip "$new_entry")
+    echo "You entered: $normalized_entry"
     read -p "Are you sure you want to add this entry to the block list? (yes/no): " confirm
     if [ "$confirm" == "yes" ]; then
-        echo "$new_entry" >> $BLACKLIST_FILE
-        echo "Added $new_entry to the block list."
+        echo "$normalized_entry" >> $BLACKLIST_FILE
+        echo "Added $normalized_entry to the block list."
+        sort -u -o $BLACKLIST_FILE $BLACKLIST_FILE
     else
-        echo "Did not add $new_entry to the block list."
+        echo "Did not add $normalized_entry to the block list."
     fi
 }
 
 # Function to remove an existing IP/Subnet or Domain from the block list
 remove_entry() {
-    echo "Select an IP/Subnet to remove from the block list:"
     mapfile -t SUBNET_LIST < $BLACKLIST_FILE
+    if [ ${#SUBNET_LIST[@]} -eq 0 ]; then
+        echo "Block list is empty."
+        return
+    fi
+
+    echo "Available IPs/Subnets to remove from the block list:"
     for i in "${!SUBNET_LIST[@]}"; do
         echo "$i) ${SUBNET_LIST[$i]}"
     done
-    read -p "Enter the number corresponding to the IP/Subnet you want to remove: " remove_index
-    if [[ "$remove_index" =~ ^[0-9]+$ ]] && [ "$remove_index" -ge 0 ] && [ "$remove_index" -lt "${#SUBNET_LIST[@]}" ]; then
-        remove_entry="${SUBNET_LIST[$remove_index]}"
-        sed -i "${remove_index}d" $BLACKLIST_FILE
-        echo "Removed $remove_entry from the block list."
+    read -p "Enter the IP/Subnet or Domain to remove from the block list: " remove_entry
+    normalized_entry=$(normalize_ip "$remove_entry")
+    if grep -q "$normalized_entry" $BLACKLIST_FILE; then
+        sed -i "\|$normalized_entry|d" $BLACKLIST_FILE
+        echo "Removed $normalized_entry from the block list."
+        sort -u -o $BLACKLIST_FILE $BLACKLIST_FILE
         apply_iptables_rules
     else
-        echo "Invalid selection. Please try again."
+        echo "$normalized_entry is not in the block list."
     fi
 }
 
 # Function to add a new IP/Subnet to the allow list
 add_allow() {
     read -p "Enter the IP/Subnet or Domain to allow: " new_entry
-    echo "You entered: $new_entry"
+    normalized_entry=$(normalize_ip "$new_entry")
+    echo "You entered: $normalized_entry"
     read -p "Are you sure you want to add this entry to the allow list? (yes/no): " confirm
     if [ "$confirm" == "yes" ]; then
-        echo "$new_entry" >> $WHITELIST_FILE
-        echo "Added $new_entry to the allow list."
+        echo "$normalized_entry" >> $WHITELIST_FILE
+        echo "Added $normalized_entry to the allow list."
+        sort -u -o $WHITELIST_FILE $WHITELIST_FILE
     else
-        echo "Did not add $new_entry to the allow list."
+        echo "Did not add $normalized_entry to the allow list."
     fi
 }
 
 # Function to remove an existing IP/Subnet or Domain from the allow list
 remove_allow() {
-    echo "Select an IP/Subnet to remove from the allow list:"
     mapfile -t ALLOW_LIST < $WHITELIST_FILE
+    if [ ${#ALLOW_LIST[@]} -eq 0 ]; then
+        echo "Allow list is empty."
+        return
+    fi
+
+    echo "Available IPs/Subnets to remove from the allow list:"
     for i in "${!ALLOW_LIST[@]}"; do
         echo "$i) ${ALLOW_LIST[$i]}"
     done
-    read -p "Enter the number corresponding to the IP/Subnet you want to remove: " remove_index
-    if [[ "$remove_index" =~ ^[0-9]+$ ]] && [ "$remove_index" -ge 0 ] && [ "$remove_index" -lt "${#ALLOW_LIST[@]}" ]]; then
-        remove_entry="${ALLOW_LIST[$remove_index]}"
-        sed -i "${remove_index}d" $WHITELIST_FILE
-        echo "Removed $remove_entry from the allow list."
+    read -p "Enter the IP/Subnet or Domain to remove from the allow list: " remove_entry
+    normalized_entry=$(normalize_ip "$remove_entry")
+    if grep -q "$normalized_entry" $WHITELIST_FILE; then
+        sed -i "\|$normalized_entry|d" $WHITELIST_FILE
+        echo "Removed $normalized_entry from the allow list."
+        sort -u -o $WHITELIST_FILE $WHITELIST_FILE
         apply_iptables_rules
     else
-        echo "Invalid selection. Please try again."
+        echo "$normalized_entry is not in the allow list."
     fi
 }
 
@@ -105,7 +141,10 @@ remove_allow() {
 sync_fail2ban() {
     echo "Syncing IPs from fail2ban..."
     for jail in "${FAIL2BAN_JAILS[@]}"; do
-        fail2ban-client status $jail | grep -oE '\b([0-9]{1,3}\.){3}[0-9]{1,3}\b' >> $BLACKLIST_FILE
+        fail2ban-client status $jail | grep -oE '\b([0-9]{1,3}\.){3}[0-9]{1,3}\b' | while read -r ip; do
+            normalized_ip=$(normalize_ip "$ip")
+            echo "$normalized_ip" >> $BLACKLIST_FILE
+        done
     done
     sort -u -o $BLACKLIST_FILE $BLACKLIST_FILE
     echo "Synced IPs from fail2ban."
@@ -123,26 +162,28 @@ remove_existing_rules() {
 
 # Function to apply the iptables rules
 apply_iptables_rules() {
+    # Remove duplicate entries from the blacklist and whitelist
+    sort -u -o $BLACKLIST_FILE $BLACKLIST_FILE
+    sort -u -o $WHITELIST_FILE $WHITELIST_FILE
+
+    # Read the latest content from the files
+    mapfile -t ALLOW_LIST < $WHITELIST_FILE
+    mapfile -t SUBNET_LIST < $BLACKLIST_FILE
+
     # Flush all existing rules
     iptables -F
 
     # Allow all from the allow list
-    if [ -f "$WHITELIST_FILE" ]; then
-        mapfile -t ALLOW_LIST < $WHITELIST_FILE
-        for ALLOW in "${ALLOW_LIST[@]}"; do
-            iptables -A INPUT -s "$ALLOW" -j ACCEPT
-            echo "Allowed Subnet: $ALLOW"
-        done
-    fi
+    for ALLOW in "${ALLOW_LIST[@]}"; do
+        iptables -A INPUT -s "$ALLOW" -j ACCEPT
+        echo "Allowed Subnet: $ALLOW"
+    done
 
     # Block all from the block list
-    if [ -f "$BLACKLIST_FILE" ]; then
-        mapfile -t SUBNET_LIST < $BLACKLIST_FILE
-        for SUBNET in "${SUBNET_LIST[@]}"; do
-            iptables -A INPUT -s "$SUBNET" -j DROP
-            echo "Blocked Subnet: $SUBNET"
-        done
-    fi
+    for SUBNET in "${SUBNET_LIST[@]}"; do
+        iptables -A INPUT -s "$SUBNET" -j DROP
+        echo "Blocked Subnet: $SUBNET"
+    done
 
     # Save the iptables rules to a file
     iptables-save > /etc/iptables/rules.v4
