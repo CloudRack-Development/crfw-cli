@@ -154,7 +154,7 @@ This project is licensed under the MIT License. See the [LICENSE](LICENSE) file 
 
 ## Support
 
-For support and further information, visit our [website](https://cloudrack.ca) or join our [Discord](https://discord.gg/invite/MKnNmVNnPY) community.
+For support and further information, visit our [website](https://cloudrack.ca) or join our community.
 
 ---
 
