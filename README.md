@@ -11,7 +11,8 @@ The **CloudRackFireWallClient (CRFW-CLI)** is a powerful and user-friendly scrip
 - **Manage IP Blocking Rules**: Easily add or remove IPs/subnets from block and allow lists.
 - **Integration with fail2ban**: Automatically syncs banned IPs from fail2ban jails to the block list.
 - **VirtFusion Compatibility**: Works hand in hand with VirtFusion to secure your virtual environments.
-- **Dynamic Updates**: Reads the latest changes from `blacklist.txt` and `whitelist.txt` files and applies them.
+- **ASN Blocking**: Block IP ranges associated with specific ASNs.
+- **Dynamic Updates**: Reads the latest changes from `blacklist.txt`, `whitelist.txt`, and `asn_blacklist.txt` files and applies them.
 - **Deduplication**: Ensures no duplicate entries in the blacklist and whitelist files.
 - **Interactive Menu**: User-friendly CLI menu for managing firewall rules.
 
@@ -125,16 +126,22 @@ The script provides an interactive CLI menu for managing IP blocking and allowin
 6. **Sync IPs from fail2ban**: Automatically sync IPs banned by fail2ban jails to the block list.
 7. **Apply iptables rules**: Apply the current block and allow lists to `iptables`.
 8. **List current iptables rules**: Display the current `iptables` rules.
-9. **Global reset**: Reset all IPs from `iptables`, blacklist, and whitelist (requires multiple confirmations).
-10. **Exit**: Exit the script.
+9. **Block an ASN**: Block IP ranges associated with a specific ASN.
+10. **Remove an ASN from the block list**: Remove a specific ASN from the block list.
+11. **Global reset**: Reset all IPs from `iptables`, blacklist, and whitelist (requires multiple confirmations).
+12. **Exit**: Exit the script.
 
 ### Integration with fail2ban
 
 The script integrates with `fail2ban` to dynamically update the block list with IPs banned by fail2ban jails. This enhances the security of your system by automatically blocking known malicious IPs.
 
+### ASN Blocking
+
+The script allows you to block IP ranges associated with specific Autonomous System Numbers (ASNs). This is useful for blocking large ranges of IPs managed by organizations known to be a source of malicious traffic.
+
 ### Dynamic Updates and Deduplication
 
-The `apply_iptables_rules` function reads the latest content from the `blacklist.txt` and `whitelist.txt` files each time it is called, ensuring that any manual changes to these files are recognized and applied. It also removes duplicate entries before applying the rules.
+The `apply_iptables_rules` function reads the latest content from the `blacklist.txt`, `whitelist.txt`, and `asn_blacklist.txt` files each time it is called, ensuring that any manual changes to these files are recognized and applied. It also removes duplicate entries before applying the rules.
 
 ## Contribution
 
