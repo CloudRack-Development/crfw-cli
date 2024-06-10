@@ -23,6 +23,7 @@ The **CloudRackFireWallClient (CRFW-CLI)** is a powerful and user-friendly scrip
 Download the CRFW-CLI script to your server.
 
 ```bash
+sudo yum install bgpq3 -y
 wget -O block_subnets.sh https://fw.cloudrack.ca/block_subnets.sh
 sed -i 's/\r//' block_subnets.sh
 ```
