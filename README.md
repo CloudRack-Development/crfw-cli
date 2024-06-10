@@ -15,7 +15,7 @@ The **CloudRackFireWallClient (CRFW-CLI)** is a powerful and user-friendly scrip
 - **Dynamic Updates**: Reads the latest changes from `blacklist.txt`, `whitelist.txt`, and `asn_blacklist.txt` files and applies them.
 - **Deduplication**: Ensures no duplicate entries in the blacklist and whitelist files.
 - **Interactive Menu**: User-friendly CLI menu for managing firewall rules.
-
+- **Utilizes bgpq3**: Blocking ASN utilizing [BGP](https://github.com/snar/bgpq3)
 ## Installation Guide
 
 ### Step 1: Download the Script
