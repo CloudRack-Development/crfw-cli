@@ -159,4 +159,4 @@ For support and further information, visit our [website](https://cloudrack.ca) o
 
 ---
 
-Crafted with ❤️ by the CloudRack team.
+Crafted with ❤️ by the CloudRack & VirtCloudPro team(s).
