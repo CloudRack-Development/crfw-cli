@@ -21,6 +21,10 @@ The **VirtCloudPro CloudRackFireWallClient (CRFW-CLI)** is a powerful and user-f
 - **Interactive Menu**: User-friendly CLI menu for managing firewall rules.
 - **Utilizes bgpq3**: Blocking ASN utilizing [BGP](https://github.com/snar/bgpq3) please note if you block many ASN's you maybe stuck waiting anywhere from 5minutes to 30minutes+ for full ASN ban to be applied 
 (this is based off our one asn block ourselfs).
+
+
+- [Use our blacklist site to see if you are currently inside our blacklisted ip's](https://blacklist.virtcloud.pro) to utilize our Datacenter services
+  
 ## Installation Guide
 
 ### Step 1: Download the Script
